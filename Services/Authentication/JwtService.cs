@@ -1,5 +1,7 @@
-﻿using ECommerceMovies.API.Dto;
+﻿using ECommerceMovies.API.Configurations;
+using ECommerceMovies.API.Dto;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -11,11 +13,11 @@ namespace ECommerceMovies.API.Services.Authentication
     {
 
         private const int EXPIRATION_MINUTES = 1;
-        private readonly IConfiguration _configuration;
+        private readonly JwtSettings _jwtSettings;
 
-        public JwtService(IConfiguration configuration)
+        public JwtService(IOptions<JwtSettings> jwtSettings)
         {
-            _configuration = configuration;
+            _jwtSettings = jwtSettings.Value;
         }
 
         public LoginResponseDto CreateToken(IdentityUser user)
@@ -39,8 +41,8 @@ namespace ECommerceMovies.API.Services.Authentication
 
         private JwtSecurityToken CreateJwtToken(Claim[] claims, SigningCredentials signingCredentials, DateTime expiration) =>
             new JwtSecurityToken(
-                   _configuration["JwtSettings:Issuer"],
-                   _configuration["JwtSettings:Audience"],
+                   _jwtSettings.Issuer,
+                   _jwtSettings.Audience,
                    claims,
                    expires: expiration,
                    signingCredentials: signingCredentials
@@ -57,7 +59,7 @@ namespace ECommerceMovies.API.Services.Authentication
 
         private SigningCredentials CreateSigningCredentials() =>
             new SigningCredentials(
-                new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:Secret"])),
+                new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret)),
                     SecurityAlgorithms.HmacSha256
                 );
     }
