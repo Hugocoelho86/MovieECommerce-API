@@ -1,5 +1,6 @@
 ﻿using ECommerceMovies.API.Dto;
 using ECommerceMovies.API.Services.Authentication;
+using ECommerceMovies.API.Services.Email;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.FileProviders;
@@ -13,13 +14,15 @@ namespace ECommerceMovies.API.Controllers
         private readonly UserManager<IdentityUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IJwtService _jwtService;
+        private readonly IEmailService _emailService;
         private readonly string role;
 
-        public AuthController(UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager, IJwtService jwtService)
+        public AuthController(UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager, IJwtService jwtService, IEmailService emailService)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _jwtService = jwtService;
+            _emailService = emailService;
             role = "User";
         }
 
@@ -80,6 +83,7 @@ namespace ECommerceMovies.API.Controllers
 
             if (user != null && await _userManager.CheckPasswordAsync(user, loginRequest.Password))
             {
+                _emailService.SendEmail(new MessageDto ( new List<string> { loginRequest.Email }, "Login Success", "Test" ));
                 var token = _jwtService.CreateToken(user);
                 return Ok(token);
             }
