@@ -4,6 +4,6 @@ namespace ECommerceMovies.API.Services.Email
 {
     public interface IEmailService
     {
-        void SendEmail (MessageDto message);
+        Task SendEmailAsync (MessageDto message);
     }
 }

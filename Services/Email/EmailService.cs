@@ -17,10 +17,10 @@ namespace ECommerceMovies.API.Services.Email
             _emailConfig = emailConfig.Value;
         }
 
-        public void SendEmail(MessageDto message)
+        public async Task SendEmailAsync(MessageDto message)
         {
             MimeMessage emailMessage = CreateEmailMessage(message);
-            SendEmail(emailMessage);
+            await SendEmail(emailMessage);
         }
 
         private MimeMessage CreateEmailMessage(MessageDto message)
@@ -34,15 +34,15 @@ namespace ECommerceMovies.API.Services.Email
             return emailMessage;
         }
 
-        private void SendEmail(MimeMessage emailMessage)
+        private async Task SendEmail(MimeMessage emailMessage)
         {
             using (var client = new SmtpClient())
             {
                 try
                 {
-                    client.Connect(_emailConfig.SmtpServer, _emailConfig.Port, SecureSocketOptions.StartTls);
-                    client.Authenticate(_emailConfig.Username, _emailConfig.Password);
-                    client.Send(emailMessage);
+                    await client.ConnectAsync(_emailConfig.SmtpServer, _emailConfig.Port, SecureSocketOptions.StartTls);
+                    await client.AuthenticateAsync(_emailConfig.Username, _emailConfig.Password);
+                    await client.SendAsync(emailMessage);
 
                 }
                 catch (Exception)
