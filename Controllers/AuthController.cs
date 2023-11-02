@@ -73,7 +73,7 @@ namespace ECommerceMovies.API.Controllers
             var encodedEmailToken = Encoding.UTF8.GetBytes(confirmEmailToken);
             var validEmailToken = WebEncoders.Base64UrlEncode(encodedEmailToken);
 
-            var url = $"{ _configuration["AppUrl"]}/api/auth/confirmemail?useremail={newUser.Email}&token={validEmailToken}";
+            var url = $"{_configuration["AppUrl"]}/api/auth/confirmemail?useremail={newUser.Email}&token={validEmailToken}";
 
             var mailAdress = new MailboxAddress(newUser.UserName, newUser.Email);
             string subject = "Confirm your email account";
@@ -97,7 +97,7 @@ namespace ECommerceMovies.API.Controllers
             {
                 return BadRequest("Bad credentials");
             }
-            
+
             var user = await _userManager.FindByEmailAsync(loginRequest.Email);
 
             if (user != null && await _userManager.CheckPasswordAsync(user, loginRequest.Password))
@@ -106,22 +106,22 @@ namespace ECommerceMovies.API.Controllers
                 return Ok(token);
             }
 
-            return Unauthorized("Invalid Authentication"); 
+            return Unauthorized("Invalid Authentication");
         }
 
         [HttpGet("confirmemail")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(LoginResponseDto))]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> ConfirmEmail(string userEmail, string token)
         {
-            if (!ModelState.IsValid)
+            if (string.IsNullOrWhiteSpace(userEmail) || string.IsNullOrWhiteSpace(token))
             {
                 return BadRequest();
             }
-                        var user = await _userManager.FindByEmailAsync(userEmail);
+            var user = await _userManager.FindByEmailAsync(userEmail);
 
-            if(user == default)
+            if (user == default)
             {
                 return NotFound();
             }
@@ -132,11 +132,75 @@ namespace ECommerceMovies.API.Controllers
 
             var result = await _userManager.ConfirmEmailAsync(user, normalToken);
 
-            if(!result.Succeeded){
+            if (!result.Succeeded)
+            {
                 return BadRequest();
             }
 
             return Ok("Email account confirmed");
+        }
+
+        [HttpGet("forgetpassword")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> ForgetPassword(string email)
+        {
+            var user = await _userManager.FindByEmailAsync(email);
+
+            if (user == default)
+            {
+                return NotFound();
+            }
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+
+            var encodedEmailToken = Encoding.UTF8.GetBytes(token);
+            var validEmailToken = WebEncoders.Base64UrlEncode(encodedEmailToken);
+            //Url Front-end page for password reset
+            var url = $"{_configuration["AppUrl"]}/resetemail?useremail={email}&token={validEmailToken}";
+
+            string subject = "Confirm your email account";
+            string body = $"<p>To reset your password <a href='{url}'>Click here</a></p>";
+
+            await _emailService.SendEmailAsync(new MessageDto(email, subject, body));
+
+            return Ok();
+        }
+
+        [HttpPost("resetemail")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(LoginResponseDto))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> ResetEmail(ResetEmailRequestDto request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
+            if (!request.Password.Equals(request.ConfirmPassword))
+            {
+                return BadRequest("The password's are not the same");
+            }
+
+            var user = await _userManager.FindByEmailAsync(request.Email);
+            if (user == default)
+            {
+                return NotFound();
+            }
+
+            var decodedToken = WebEncoders.Base64UrlDecode(request.Token);
+            string normalToken = Encoding.UTF8.GetString(decodedToken);
+
+            var result = await _userManager.ResetPasswordAsync(user, request.Token, request.Password);
+
+            if (!result.Succeeded)
+            {
+                return BadRequest();
+            }
+
+            return Ok("Password changed");
         }
     }
 }
