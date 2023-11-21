@@ -5,20 +5,45 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ECommerceMovies.API.Data
 {
-    public class ApplicationDbContext: IdentityDbContext<IdentityUser>
+    public class ApplicationDbContext: IdentityDbContext<User>
     {
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) {}
 
         public DbSet<Movie> Movies { get; set; }
+        public DbSet<Order> Orders { get; set; }
+        public DbSet<OrderItem> OrderItems { get; set; }
+        public DbSet<Actor> Actors { get; set; }
 
-        protected override void OnModelCreating(ModelBuilder builder)
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            base.OnModelCreating(builder);
+            base.OnModelCreating(modelBuilder);
 
-            builder.Entity<IdentityRole>().HasData(
+            modelBuilder.Entity<IdentityRole>().HasData(
                 new IdentityRole { Name = "Administrator", NormalizedName = "ADMIN"},
                 new IdentityRole { Name = "User", NormalizedName = "USER"}
                 );
+
+            modelBuilder.Entity<User>()
+                .HasMany(e => e.Orders)
+                .WithOne(e => e.User)
+                .HasForeignKey(e => e.UserId)
+                .IsRequired();
+
+            modelBuilder.Entity<Order>()
+                .HasMany(e => e.Items)
+                .WithOne(e => e.Order)
+                .HasForeignKey(e => e.OrderId)
+                .IsRequired();
+
+            modelBuilder.Entity<Movie>()
+                .HasMany(e => e.Items)
+                .WithOne(e => e.Movie)
+                .HasForeignKey(e => e.MovieId)
+                .IsRequired();
+
+            modelBuilder.Entity<Movie>()
+                .HasMany(e => e.Actors)
+                .WithMany(e => e.Movies);
         }
     }
 }

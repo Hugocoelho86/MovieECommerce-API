@@ -1,4 +1,5 @@
 ﻿using ECommerceMovies.API.Dto;
+using ECommerceMovies.API.Models;
 using ECommerceMovies.API.Services.Authentication;
 using ECommerceMovies.API.Services.Email;
 using Microsoft.AspNetCore.Identity;
@@ -15,14 +16,14 @@ namespace ECommerceMovies.API.Controllers
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
-        private readonly UserManager<IdentityUser> _userManager;
+        private readonly UserManager<User> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IJwtService _jwtService;
         private readonly IEmailService _emailService;
         private readonly IConfiguration _configuration;
         private readonly string role;
 
-        public AuthController(UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager, IJwtService jwtService, IEmailService emailService, IConfiguration configuration)
+        public AuthController(UserManager<User> userManager, RoleManager<IdentityRole> roleManager, IJwtService jwtService, IEmailService emailService, IConfiguration configuration)
         {
             _userManager = userManager;
             _roleManager = roleManager;
@@ -54,7 +55,7 @@ namespace ECommerceMovies.API.Controllers
                 return BadRequest("User email is already registered.");
             }
 
-            var newUser = new IdentityUser
+            var newUser = new User
             {
                 UserName = registerUser.Email,
                 Email = registerUser.Email,
@@ -97,9 +98,8 @@ namespace ECommerceMovies.API.Controllers
             {
                 return BadRequest("Bad credentials");
             }
-
             var user = await _userManager.FindByEmailAsync(loginRequest.Email);
-
+            
             if (user != null && await _userManager.CheckPasswordAsync(user, loginRequest.Password))
             {
                 var token = _jwtService.CreateToken(user);
